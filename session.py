@@ -4,16 +4,28 @@
 import redis
 from auth import generator_sessionToken
 
-class SessionManager(object):
+class RedisManager(object):
     def __init__(self, host='localhost', port=6379, db=0):
         self.pool = redis.ConnectionPool(host=host, port=port, db=db)
         self.r = redis.Redis(connection_pool=self.pool)
 
-class Session(object):
-    SessionManager = SessionManager().r
+class session(object):
+    SessionManager = RedisManager().r
 
-    def isInside(self):
-        pass
+    def incr(self, name, amount=1):
+        return self.SessionManager.incr(name, amount)
+
+    def ttl(self, name):
+        return self.SessionManager.ttl(name)
+
+    def expire(self, name, time=900):
+        return self.SessionManager.expire(name, time)
+    #
+    # def __getattr__(self, method):
+    #     methname = method.__name__
+    #     meth = getattr(self, methname, None)
+    #
+    #     return meth(node)
 
     def smembers(self, key):
         tmp = self.SessionManager.smembers(key)
@@ -80,7 +92,7 @@ class Session(object):
 
 # session = Session(host = 'localhost', port = 6379)
 
-class sessionToken(Session):
+class sessionToken(session):
 
     def generator_token(self, data):
         key = data.get('username', '') + str(data.get('_id'))
@@ -96,9 +108,19 @@ class sessionToken(Session):
         # field = generator_sessionToken(value)
         # key = data.get('username', '') + str(data.get('_id'))
         key = self.generator_token(data)
-        result = self.set(key=key, value=data.get('username'))
+        result = self.set(key=key, value=data.get('username'), px=1800)
 
         return key if result else False
+
+    def update(self, data):
+        """
+        update sessionToken
+        """
+        sessionToken = self.create(data)
+
+        self.expire(sessionToken, time=1800)
+
+        return sessionToken
 
     def find(self, key):
         """
@@ -112,6 +134,3 @@ class sessionToken(Session):
             return None
         else:
             return self.get(key)
-            # result = self.get(field)
-
-        # return field

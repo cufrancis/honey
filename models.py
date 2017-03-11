@@ -6,10 +6,10 @@ sys.path.append("../../../")
 
 from db import db
 
+class Model(object):
+    pass
+
 class User(object):
 
     def __init__(self):
         self.db = db
-
-    def find_one(self):
-        pass

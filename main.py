@@ -5,8 +5,8 @@ import tornado.ioloop
 import tornado.web
 from tornado.options import define, options
 from settings import settings
-
 from route import urls
+# from app import app
 
 define("port", default="8888", help="listen port")
 

@@ -5,7 +5,7 @@ import json
 from tornado.web import Finish
 import tornado.web
 from db import db
-from session import sessionToken
+from session import sessionToken, session
 import time
 
 class APIHandler(tornado.web.RequestHandler):
@@ -16,6 +16,7 @@ class APIHandler(tornado.web.RequestHandler):
         self.set_header('Server', 'Tornado')
         self.set_header('Connection','keep-alive')
         self.db = db
+        self.session = session()
         self.sessionToken = sessionToken()
 
 

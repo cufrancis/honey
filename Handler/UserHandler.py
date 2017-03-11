@@ -9,9 +9,10 @@ import utils
 import time
 import datetime
 from bson.objectid import ObjectId
-from session import sessionToken
-from auth import generator_sessionToken
+# from session import sessionToken, session
+# from auth import generator_sessionToken
 import tornado.web
+import auth
 
 class index(APIHandler):
 
@@ -53,7 +54,7 @@ class index(APIHandler):
                 'created_at':time.mktime(info.get('created_at', '').timetuple()),
             }
             # write session token in redis server!
-            self.sessionToken.create(user.get('username'))
+            self.sessionToken.create(info)
             self.write_json(data, 201)
         else:
             self.write_error("Some error!, contact administrator.", 401)
@@ -63,6 +64,7 @@ class login(APIHandler):
     login
     """
     @api.application_verification
+    # @auth.account_lock
     def post(self):
         args = utils.body_decode(self.request.body)
 
@@ -78,17 +80,69 @@ class login(APIHandler):
             }
             data.update(user)
             # delet _id : object_id
+            del data['_id']
 
             self.write_json(data)
-            print(data)
+        else:
+            # 如果在 15 分钟内，同一个用户登录失败的次数大于 6 次，该用户账户即被云端暂时锁定
+            key = 'failed_'+args.get('username')
+            result = self.session.get(key)
+            if result is not None and int(result) >= 6:
+                self.write_error("Account lock!")
+
+            self.session.incr(key, 1)
+            if self.session.ttl(key) is None:
+                self.session.expire(key, 900) # 900 seconds == 15 minutes
 
 class user(APIHandler):
 
     @api.application_verification
     @api.authenticated
-    # @tornado.web.authenticated
-    def get(self, username):
-        # print(self.current_user)
-        # print(username)
+    def get(self, *args):
+        # print('User')
+        # print(kw)
         del self.current_user['password']
+
         self.write_json(self.current_user)
+
+class refreshSessionToken(APIHandler):
+
+    @api.application_verification
+    @api.authenticated
+    def put(self, username):
+        # update sessionToken
+        print(username)
+        """
+        1. generator new sessionToken
+        2. store in redis and set expire time
+        3. return data to result
+        """
+        user = self.db.users.find_one({'username':username}, projection={'password':False})
+        # self.sessionToken.create(user)
+        # print(user)
+        print(user)
+
+        user['created_at'] = time.mktime(user.get('created_at', '').timetuple())
+        user['updated_at'] = time.mktime(user.get('updated_at', '').timetuple())
+
+        data = {
+            'objectId':str(user.get('_id', '')),
+            'sessionToken':self.sessionToken.update(user)
+        }
+        data.update(user)
+        # delet _id : object_id
+        del data['_id']
+
+        self.write_json(data)
+#
+# class usersByMobilePhone(APIHandler):
+#
+#     @api.application_verification
+#     @api.authenticated
+#     def post(self):
+#         """
+#         register user from phone numbers
+#         if phone number is exists , login
+#         """
+#
+#         pass
