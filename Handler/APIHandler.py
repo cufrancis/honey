@@ -5,6 +5,8 @@ import json
 from tornado.web import Finish
 import tornado.web
 from db import db
+from session import sessionToken
+import time
 
 class APIHandler(tornado.web.RequestHandler):
 
@@ -14,6 +16,7 @@ class APIHandler(tornado.web.RequestHandler):
         self.set_header('Server', 'Tornado')
         self.set_header('Connection','keep-alive')
         self.db = db
+        self.sessionToken = sessionToken()
 
 
         # if self.settings.get('allow_remote_access'):
@@ -32,6 +35,29 @@ class APIHandler(tornado.web.RequestHandler):
 
     def write_error(self, msg, status_code=200):
         self.write_json(data='', status_code=status_code, msg=msg)
+
+    def get_current_user(self):
+        """
+        current_user
+        """
+        token = self.request.headers.get('X-LC-Session', '')
+        if token == '':
+            return None
+
+        username = self.sessionToken.find(token)
+        if username is not None:
+            user = self.db.users.find_one({'username':username})
+            user['created_at'] = time.mktime(user.get('created_at', '').timetuple())
+            user['updated_at'] = time.mktime(user.get('updated_at', '').timetuple())
+            data = {
+                'objectId':str(user.get('_id', '')),
+                'sessionToken':self.sessionToken.create(user)
+            }
+            data.update(user)
+            del data['_id']
+            return data
+        else:
+            return None
 
     # def application_verification(self):
     def application_verification(self, headers):

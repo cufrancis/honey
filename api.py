@@ -67,3 +67,13 @@ def application_verification(method):
         else:
             return method(self, *args, **kwargs)
     return wrapper
+
+def authenticated(method):
+
+    @functools.wraps(method)
+    def wrapper(self, *args, **kwargs):
+        if not self.current_user or self.current_user is None:
+            self.write_error(msg="not login", status_code=401)
+
+        return method(self, *args, **kwargs)
+    return wrapper
