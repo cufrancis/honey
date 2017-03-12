@@ -12,6 +12,8 @@ urls = [
     (r'/login', User.login),
     (r'/users/(.*)/refreshSessionToken', User.refreshSessionToken),
     (r'/users/(.*)', User.user),
+    (r'/emailVerified/(.*)', User.emailVerified),
+    (r'/emailVerified', User.emailVerified),
     # (r'/usersByMobilePhone', User.usersByMobilePhone),
 
 ]

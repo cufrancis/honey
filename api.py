@@ -73,7 +73,11 @@ def authenticated(method):
     @functools.wraps(method)
     def wrapper(self, *args, **kwargs):
         if not self.current_user or self.current_user is None:
+            # print(self.current_user)
             self.write_error(msg="not login", status_code=403)
 
         return method(self, *args, **kwargs)
     return wrapper
+
+def sendEmail(string):
+    pass

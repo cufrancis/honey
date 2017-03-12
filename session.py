@@ -77,6 +77,9 @@ class session(object):
     def exists(self, name):
         return self.SessionManager.exists(name)
 
+    def dels(self, *name):
+        return self.SessionManager.delete(*name)
+
     def flushdb(self):
         pass
         #return self.r.flushdb()
@@ -134,3 +137,23 @@ class sessionToken(session):
             return None
         else:
             return self.get(key)
+
+class email_verified(session):
+
+    def create(self, user):
+        key = 'emailVerified_'+user.get('username')
+        result = self.set(key=key, value=user.get('email'), px=1800)
+
+        return key if result else False
+
+    def find(self, code):
+        code = str(code)
+
+        result = self.get(key=code)
+
+        return result if result else False
+
+    def delete(self, code):
+        code = str(code)
+
+        return self.dels(code)

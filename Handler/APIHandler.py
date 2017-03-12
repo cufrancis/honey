@@ -5,8 +5,9 @@ import json
 from tornado.web import Finish
 import tornado.web
 from db import db
-from session import sessionToken, session
+from session import sessionToken, session, email_verified
 import time
+import utils
 
 class APIHandler(tornado.web.RequestHandler):
 
@@ -18,12 +19,14 @@ class APIHandler(tornado.web.RequestHandler):
         self.db = db
         self.session = session()
         self.sessionToken = sessionToken()
+        self.email_verified = email_verified()
+        self.VerifiedEmail = utils.VerifiedEmail()
 
 
         # if self.settings.get('allow_remote_access'):
         #     self.access_control_allow()
 
-    def write_json(self, data, status_code=200, msg='success.'):
+    def write_json(self, data='', status_code=200, msg='success.'):
         self.set_header('Cache-Control', "no-cache")
         self.set_status(status_code)
 
@@ -42,10 +45,13 @@ class APIHandler(tornado.web.RequestHandler):
         current_user
         """
         token = self.request.headers.get('X-LC-Session', '')
+        # print(self.request.headers)
+        # print(token)
         if token == '':
             return None
 
         username = self.sessionToken.find(token)
+        # print(username)
         if username is not None:
             user = self.db.users.find_one({'username':username})
             user['created_at'] = time.mktime(user.get('created_at', '').timetuple())

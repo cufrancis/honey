@@ -35,6 +35,7 @@ class index(APIHandler):
             'username':args.get('username', ''),
             'password':args.get('password', ''),
             'email':args.get('email', ''),
+            'emailVerified':False,
             'phone':args.get('phone', ''),
             'age':args.get('age', 18),
             'sex':args.get('sex', ''),
@@ -70,6 +71,7 @@ class login(APIHandler):
 
         user = self.db.users.find_one({'username':args.get('username', ''), 'password':args.get('password')},
                                         projection={'password':False})
+        # print(args)
         if user is not None:
             user['created_at'] = time.mktime(user.get('created_at', '').timetuple())
             user['updated_at'] = time.mktime(user.get('updated_at', '').timetuple())
@@ -93,14 +95,18 @@ class login(APIHandler):
             self.session.incr(key, 1)
             if self.session.ttl(key) is None:
                 self.session.expire(key, 900) # 900 seconds == 15 minutes
+            self.write_error("login error", 401)
 
 class user(APIHandler):
 
     @api.application_verification
     @api.authenticated
-    def get(self, *args):
+    def get(self, username):
         # print('User')
         # print(kw)
+        if self.current_user['username'] != username:
+            self.write_error(msg="Forbidden by class permissions", status_code=403)
+
         del self.current_user['password']
 
         self.write_json(self.current_user)
@@ -134,15 +140,42 @@ class refreshSessionToken(APIHandler):
         del data['_id']
 
         self.write_json(data)
-#
-# class usersByMobilePhone(APIHandler):
-#
-#     @api.application_verification
-#     @api.authenticated
-#     def post(self):
-#         """
-#         register user from phone numbers
-#         if phone number is exists , login
-#         """
-#
-#         pass
+
+class emailVerified(APIHandler):
+
+    @api.application_verification
+    @api.authenticated
+    def post(self):
+        args = utils.body_decode(self.request.body)
+        user = self.db.users.find_one({'email':args.get('email', '')}, projection={'password':False})
+        # print(user)
+        if user is None:
+            self.write_error(msg="email is empty!")
+        if user.get('emailVerified') is True:
+            self.write_error(msg="This email is Verified!")
+
+        # print("No check")
+        if self.VerifiedEmail.send(user):
+            self.write_json(msg="send email success.")
+        else:
+            self.write_error(msg="send email error.")
+        self.write_json(msg="")
+            # self.emailVerified.create(user)
+
+    def get(self, emailVerifiedCode):
+        email = self.email_verified.find(emailVerifiedCode)
+        print(email)
+
+        if email is None or email == '':
+            self.write_error("email is None or is empty!")
+
+        from pymongo import ReturnDocument
+        user = self.db.users.find_one_and_update(
+                    {'email':email},
+                    update={'$set': {'emailVerified':True}},
+                    return_document=ReturnDocument.AFTER
+                    )
+        print(user)
+        self.email_verified.delete(emailVerifiedCode)
+
+        self.write_json("Verify email successful!")
