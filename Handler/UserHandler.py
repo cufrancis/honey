@@ -164,10 +164,10 @@ class emailVerified(APIHandler):
 
     def get(self, emailVerifiedCode):
         email = self.email_verified.find(emailVerifiedCode)
-        print(email)
+        # print(email)
 
-        if email is None or email == '':
-            self.write_error("email is None or is empty!")
+        if email is False or email == '':
+            self.write_error("emailVerifiedCode Error!", status_code=404)
 
         from pymongo import ReturnDocument
         user = self.db.users.find_one_and_update(

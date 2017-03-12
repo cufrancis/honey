@@ -42,7 +42,7 @@ class VerifiedEmail(Email):
         to_addr = data.get('email')
         smtp_server = 'smtp.163.com'
 
-        content = "welcome to register honey shop! \n please verify you email, this is code{code} , click it or  copy that".format(code=code)
+        content = "welcome to register honey shop! \n please verify you email, this is code: \n<b><center>{code}</center><b> \n click it or  copy that.Thank You!".format(code=code)
 
         msg = MIMEText(content, 'plain', 'utf-8')
         msg['From'] = from_addr
