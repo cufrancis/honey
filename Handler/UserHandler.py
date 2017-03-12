@@ -175,7 +175,38 @@ class emailVerified(APIHandler):
                     update={'$set': {'emailVerified':True}},
                     return_document=ReturnDocument.AFTER
                     )
-        print(user)
+        # print(user)
         self.email_verified.delete(emailVerifiedCode)
 
         self.write_json("Verify email successful!")
+
+class requestPasswordReset(APIHandler):
+
+    @api.application_verification
+    @api.authenticated
+    def post(self):
+        args = utils.body_decode(self.request.body)
+
+        user = self.db.users.find_one({'email':args.get('email', '')}, projection={'password':False})
+        if user is None:
+            self.write_error("cannot find user!")
+
+        emailResetPassword = utils.emailResetPassword()
+        if emailResetPassword.send(user):
+            self.write_json("send resetPassword successful")
+        else:
+            self.write_error("send resetPassword error...")
+
+    # def get(self, code):
+    #     emailResetPassword = utils.emailResetPassword()
+    #     email = emailResetPassword.find(code)
+    #
+    #     if email is False or email == '':
+    #         self.write_error("Reset password code Error!", status_code=404)
+    #
+    #     user = self.db.users.find_one({'email':email})
+    #
+    #     # print(user)
+    #     self.emailResetPassword.delete(code)
+    #
+    #     self.write_json("Verify email successful!")

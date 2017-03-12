@@ -15,5 +15,8 @@ urls = [
     (r'/emailVerified/(.*)', User.emailVerified),
     (r'/emailVerified', User.emailVerified),
     # (r'/usersByMobilePhone', User.usersByMobilePhone),
+    # unstable
+    # (r'/requestPasswordReset/(.*)', User.requestPasswordReset),
+    # (r'/requestPasswordReset', User.requestPasswordReset),
 
 ]

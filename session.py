@@ -157,3 +157,19 @@ class email_verified(session):
         code = str(code)
 
         return self.dels(code)
+
+class reset_password(session):
+
+    def create(self, user):
+        key = 'resetPassword_'+user.get('username')
+        result = self.set(key=key, value=user.get('email'), px=1800)
+
+        return key if result else False
+
+    def find(self, key):
+        key = str(key)
+        return self.get(key=key)
+
+    def delete(self, key):
+        key = str(key)
+        return self.dels(key)
