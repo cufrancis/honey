@@ -33,6 +33,8 @@ class VerifiedEmail(Email):
         self.emailVerified = email_verified()
 
     def send(self, data):
+        # print(data)
+        # return
         code = self.generate_code(data)
 
         # send email primarily
@@ -42,9 +44,16 @@ class VerifiedEmail(Email):
         to_addr = data.get('email')
         smtp_server = 'smtp.163.com'
 
-        content = "welcome to register honey shop! \n please verify you email, this is code: \n<b><center>{code}</center><b> \n click it or  copy that.Thank You!".format(code=code)
+        # content = "welcome to register honey shop! \n please verify you email, this is code: \n<b><center>{code}</center><b> \n click it or  copy that.Thank You!".format(code=code)
 
-        msg = MIMEText(content, 'plain', 'utf-8')
+        content = '<h2 style="margin:20px 0;font-size:16px;font-weight:normal">Hi, {username}</h2> \
+                    <p style="line-height:1.5"> \
+                        您需要验证应用 {appname} 里的账号邮箱地址 {email} <br /> \
+                        请点击下列链接进行确认:<br/> \
+                        <a href="{link}" style="color:#2375ac" target="_blank">{link}</a> \
+                    </p>'.format(username=data.get('username', 'Null'),appname='honey',email=data.get('email'), link = code)
+
+        msg = MIMEText(content, 'html', 'utf-8')
         msg['From'] = from_addr
         msg['Subject'] = Header('text', 'utf8').encode()
         msg['To'] = to_addr
