@@ -61,27 +61,24 @@ class index(APIHandler):
             self.write_error("Some error!, contact administrator.", 401)
 
     @api.application_verification
-    def get(self, username):
+    def get(self):
         """
-        Get user information
+        Get all user information
         """
-        user = self.db.users.find_one({'username':str(username)}, projection={'password':False})
+        users = self.db.users.find({})
 
-        if user is None:
-            self.write_error(msg = 'username is empty!', status_code=404)
+        # for k in len(users):
+        #     print(k)
+        result = list()
+        for user in users:
+            user['_id'] = str(user['_id'])
+            user['created_at'] = time.mktime(user.get('created_at', '').timetuple()),
+            user['updated_at'] = time.mktime(user.get('updated_at', '').timetuple()),
 
-        user['created_at'] = time.mktime(user.get('created_at', '').timetuple())
-        user['updated_at'] = time.mktime(user.get('updated_at', '').timetuple())
+            result.append(user)
 
-        data = {
-            'objectId':str(user.get('_id', '')),
-            'sessionToken':self.sessionToken.create(user)
-        }
-        data.update(user)
-        # delet _id : object_id
-        del data['_id']
-
-        self.write_json(data)
+        self.write_json(data={'result':result})
+        print(result)
 
     @api.application_verification
     @api.authenticated
@@ -182,14 +179,26 @@ class user(APIHandler):
     @api.application_verification
     @api.authenticated
     def get(self, username):
-        # print('User')
-        # print(kw)
-        if self.current_user['username'] != username:
-            self.write_error(msg="Forbidden by class permissions", status_code=403)
+        """
+        Get user information
+        """
+        user = self.db.users.find_one({'username':str(username)}, projection={'password':False})
 
-        del self.current_user['password']
+        if user is None:
+            self.write_error(msg = 'username is empty!', status_code=404)
 
-        self.write_json(self.current_user)
+        user['created_at'] = time.mktime(user.get('created_at', '').timetuple())
+        user['updated_at'] = time.mktime(user.get('updated_at', '').timetuple())
+
+        data = {
+            'objectId':str(user.get('_id', '')),
+            'sessionToken':self.sessionToken.create(user)
+        }
+        data.update(user)
+        # delet _id : object_id
+        del data['_id']
+
+        self.write_json(data)
 
 class refreshSessionToken(APIHandler):
 
