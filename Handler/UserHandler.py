@@ -60,6 +60,50 @@ class index(APIHandler):
         else:
             self.write_error("Some error!, contact administrator.", 401)
 
+    @api.application_verification
+    def get(self, username):
+        """
+        Get user information
+        """
+        user = self.db.users.find_one({'username':str(username)}, projection={'password':False})
+
+        if user is None:
+            self.write_error(msg = 'username is empty!', status_code=404)
+
+        user['created_at'] = time.mktime(user.get('created_at', '').timetuple())
+        user['updated_at'] = time.mktime(user.get('updated_at', '').timetuple())
+
+        data = {
+            'objectId':str(user.get('_id', '')),
+            'sessionToken':self.sessionToken.create(user)
+        }
+        data.update(user)
+        # delet _id : object_id
+        del data['_id']
+
+        self.write_json(data)
+
+    @api.application_verification
+    @api.authenticated
+    def put(self, username):
+        """
+        Update user information
+        """
+        if self.current_user.get('username') != username:
+            self.write_error('Forbidden', status_code=403)
+
+        args = utils.body_decode(self.request.body)
+        args['updated_at'] = datetime.datetime.utcnow()
+
+        from pymongo import ReturnDocument
+        user = self.db.users.find_one_and_update(
+                {'username':self.current_user['username']},
+                {'$set':args},
+                return_document=ReturnDocument.AFTER
+                )
+        self.write_json({'updated_at':time.mktime(user.get('updated_at', '').timetuple())})
+
+
 class login(APIHandler):
     """
     login
@@ -83,6 +127,9 @@ class login(APIHandler):
             data.update(user)
             # delet _id : object_id
             del data['_id']
+            # delete failed login log
+            key = 'failed_'+args.get('username')
+            self.session.dels(key)
 
             self.write_json(data)
         else:
@@ -95,7 +142,40 @@ class login(APIHandler):
             self.session.incr(key, 1)
             if self.session.ttl(key) is None:
                 self.session.expire(key, 900) # 900 seconds == 15 minutes
-            self.write_error("login error", 401)
+            self.write_error("password or username error", 401)
+
+class updatePassword(APIHandler):
+
+    @api.application_verification
+    @api.authenticated
+    def put(self, username):
+        args = utils.body_decode(self.request.body)
+        # print(username)
+        if self.current_user.get('username') != username:
+            self.write_error('Forbidden', status_code=403)
+
+        if self.current_user.get('password') != args.get('old_password'):
+            self.write_error(msg='old password is error')
+
+        from pymongo import ReturnDocument
+        user = self.db.users.find_one_and_update(
+                {'username':username},
+                {'$set':{'password':args.get('new_password')}},
+                return_document=AFTER
+                )
+
+        user['created_at'] = time.mktime(user.get('created_at', '').timetuple())
+        user['updated_at'] = time.mktime(user.get('updated_at', '').timetuple())
+
+        data = {
+            'objectId':str(user.get('_id', '')),
+            'sessionToken':self.sessionToken.create(user)
+        }
+        data.update(user)
+        # delet _id : object_id
+        del data['_id']
+        self.write_json(data, msg="update successful!")
+
 
 class user(APIHandler):
 
