@@ -65,7 +65,7 @@ class index(APIHandler):
         """
         Get all user information
         """
-        users = self.db.users.find({})
+        users = self.db.users.find({}, projection={'password':False})
 
         # for k in len(users):
         #     print(k)
