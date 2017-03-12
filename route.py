@@ -8,9 +8,9 @@ import Handler.UserHandler as User
 
 urls = [
     (r'/', Index.index), # 404 index
-    (r'/users', User.index),
+    (r'/users/?(.*?)', User.index),
+    # (r'/users/(.*)', User.user),
     (r'/users/(.*)/updatePassword', User.updatePassword),
-    (r'/users/(.*)', User.user),
     (r'/users/(.*)/refreshSessionToken', User.refreshSessionToken),
     (r'/login', User.login),
     (r'/emailVerified/(.*)', User.emailVerified),
